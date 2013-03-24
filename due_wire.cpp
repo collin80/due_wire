@@ -22,7 +22,7 @@ extern "C" {
 #include <string.h>
 }
 
-#include "Wire.h"
+#include "due_wire.h"
 
 static inline bool TWI_FailedAcknowledge(Twi *pTwi) {
 	return pTwi->TWI_SR & TWI_SR_NACK;
@@ -86,17 +86,35 @@ TwoWire::TwoWire(Twi *_twi, void(*_beginCb)(void)) :
 }
 
 void TwoWire::begin(void) {
+	begin((uint32_t)100000ul);
+}
+
+void TwoWire::begin(uint8_t address) {
+	begin(address, (uint32_t)100000ul);
+}
+
+void TwoWire::begin(uint16_t address) {
+	begin((uint8_t) address);
+}
+
+void TwoWire::begin(uint32_t speed) {
+
+	twiSpeed = speed;
+	
 	if (onBeginCallback)
 		onBeginCallback();
 
 	// Disable PDC channel
 	twi->TWI_PTCR = UART_PTCR_RXTDIS | UART_PTCR_TXTDIS;
 
-	TWI_ConfigureMaster(twi, TWI_CLOCK, VARIANT_MCK);
-	status = MASTER_IDLE;
+	TWI_ConfigureMaster(twi, twiSpeed, VARIANT_MCK);
+	status = MASTER_IDLE;	
 }
 
-void TwoWire::begin(uint8_t address) {
+void TwoWire::begin(uint8_t address, uint32_t speed) {
+
+	twiSpeed = speed;
+	
 	if (onBeginCallback)
 		onBeginCallback();
 
@@ -106,11 +124,15 @@ void TwoWire::begin(uint8_t address) {
 	TWI_ConfigureSlave(twi, address);
 	status = SLAVE_IDLE;
 	TWI_EnableIt(twi, TWI_IER_SVACC);
-	//| TWI_IER_RXRDY | TWI_IER_TXRDY	| TWI_IER_TXCOMP);
+	//| TWI_IER_RXRDY | TWI_IER_TXRDY	| TWI_IER_TXCOMP);	
 }
 
-void TwoWire::begin(int address) {
-	begin((uint8_t) address);
+void TwoWire::begin(uint16_t address, uint32_t speed) {
+	begin((uint8_t)address, speed);
+}
+
+void TwoWire::begin(uint32_t address, uint32_t speed) {
+	begin((uint8_t)address, speed);
 }
 
 uint8_t TwoWire::requestFrom(uint8_t address, uint8_t quantity, uint8_t sendStop) {

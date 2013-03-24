@@ -27,14 +27,21 @@
 #include "Stream.h"
 #include "variant.h"
 
-#define BUFFER_LENGTH 32
+//this buffer is much larger than the normal Arduino one
+//It allows for a 256 byte buffer to be sent along with 
+//extra control data.
+#define BUFFER_LENGTH 260
 
 class TwoWire : public Stream {
 public:
 	TwoWire(Twi *twi, void(*begin_cb)(void));
 	void begin();
 	void begin(uint8_t);
-	void begin(int);
+	void begin(uint16_t);
+	void begin(uint32_t);
+	void begin(uint8_t, uint32_t);
+	void begin(uint16_t, uint32_t);
+	void begin(uint32_t, uint32_t);
 	void beginTransmission(uint8_t);
 	void beginTransmission(int);
 	uint8_t endTransmission(void);
@@ -61,6 +68,10 @@ public:
 	void onService(void);
 
 private:
+
+	//TWI clock freq
+	uint32_t twiSpeed;
+	
 	// RX Buffer
 	uint8_t rxBuffer[BUFFER_LENGTH];
 	uint8_t rxBufferIndex;
@@ -97,9 +108,6 @@ private:
 		SLAVE_SEND
 	};
 	TwoWireStatus status;
-
-	// TWI clock frequency
-	static const uint32_t TWI_CLOCK = 100000;
 
 	// Timeouts (
 	static const uint32_t RECV_TIMEOUT = 100000;
