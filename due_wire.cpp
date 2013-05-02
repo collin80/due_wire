@@ -22,7 +22,7 @@ extern "C" {
 #include <string.h>
 }
 
-#include "Wire.h"
+#include "due_wire.h"
 
 static inline bool TWI_FailedAcknowledge(Twi *pTwi) {
 	return pTwi->TWI_SR & TWI_SR_NACK;
@@ -86,17 +86,35 @@ TwoWire::TwoWire(Twi *_twi, void(*_beginCb)(void)) :
 }
 
 void TwoWire::begin(void) {
+	begin((uint32_t)100000ul);
+}
+
+void TwoWire::begin(uint8_t address) {
+	begin(address, (uint32_t)100000ul);
+}
+
+void TwoWire::begin(uint16_t address) {
+	begin((uint8_t) address);
+}
+
+void TwoWire::begin(uint32_t speed) {
+
+	twiSpeed = speed;
+	
 	if (onBeginCallback)
 		onBeginCallback();
 
 	// Disable PDC channel
 	twi->TWI_PTCR = UART_PTCR_RXTDIS | UART_PTCR_TXTDIS;
 
-	TWI_ConfigureMaster(twi, TWI_CLOCK, VARIANT_MCK);
-	status = MASTER_IDLE;
+	TWI_ConfigureMaster(twi, twiSpeed, VARIANT_MCK);
+	status = MASTER_IDLE;	
 }
 
-void TwoWire::begin(uint8_t address) {
+void TwoWire::begin(uint8_t address, uint32_t speed) {
+
+	twiSpeed = speed;
+	
 	if (onBeginCallback)
 		onBeginCallback();
 
@@ -106,14 +124,18 @@ void TwoWire::begin(uint8_t address) {
 	TWI_ConfigureSlave(twi, address);
 	status = SLAVE_IDLE;
 	TWI_EnableIt(twi, TWI_IER_SVACC);
-	//| TWI_IER_RXRDY | TWI_IER_TXRDY	| TWI_IER_TXCOMP);
+	//| TWI_IER_RXRDY | TWI_IER_TXRDY	| TWI_IER_TXCOMP);	
 }
 
-void TwoWire::begin(int address) {
-	begin((uint8_t) address);
+void TwoWire::begin(uint16_t address, uint32_t speed) {
+	begin((uint8_t)address, speed);
 }
 
-uint8_t TwoWire::requestFrom(uint8_t address, uint8_t quantity, uint8_t sendStop) {
+void TwoWire::begin(uint32_t address, uint32_t speed) {
+	begin((uint8_t)address, speed);
+}
+
+uint8_t TwoWire::requestFrom(uint8_t address, uint16_t quantity, uint8_t sendStop) {
 	if (quantity > BUFFER_LENGTH)
 		quantity = BUFFER_LENGTH;
 
@@ -137,16 +159,8 @@ uint8_t TwoWire::requestFrom(uint8_t address, uint8_t quantity, uint8_t sendStop
 	return readed;
 }
 
-uint8_t TwoWire::requestFrom(uint8_t address, uint8_t quantity) {
-	return requestFrom((uint8_t) address, (uint8_t) quantity, (uint8_t) true);
-}
-
-uint8_t TwoWire::requestFrom(int address, int quantity) {
-	return requestFrom((uint8_t) address, (uint8_t) quantity, (uint8_t) true);
-}
-
-uint8_t TwoWire::requestFrom(int address, int quantity, int sendStop) {
-	return requestFrom((uint8_t) address, (uint8_t) quantity, (uint8_t) sendStop);
+uint8_t TwoWire::requestFrom(uint8_t address, uint16_t quantity) {
+	return requestFrom((uint8_t) address, (uint16_t) quantity, (uint8_t) true);
 }
 
 void TwoWire::beginTransmission(uint8_t address) {
@@ -178,7 +192,7 @@ uint8_t TwoWire::endTransmission(uint8_t sendStop) {
 	// transmit buffer (blocking)
 	TWI_StartWrite(twi, txAddress, 0, 0, txBuffer[0]);
 	TWI_WaitByteSent(twi, XMIT_TIMEOUT);
-	int sent = 1;
+	uint16_t sent = 1;
 	while (sent < txBufferLength) {
 		TWI_WriteByte(twi, txBuffer[sent++]);
 		TWI_WaitByteSent(twi, XMIT_TIMEOUT);
@@ -215,9 +229,9 @@ size_t TwoWire::write(uint8_t data) {
 	}
 }
 
-size_t TwoWire::write(const uint8_t *data, size_t quantity) {
+size_t TwoWire::write(const uint8_t *data, uint16_t quantity) {
 	if (status == MASTER_SEND) {
-		for (size_t i = 0; i < quantity; ++i) {
+		for (uint16_t i = 0; i < quantity; ++i) {
 			if (txBufferLength >= BUFFER_LENGTH)
 				return i;
 			txBuffer[txBufferLength++] = data[i];
@@ -231,6 +245,11 @@ size_t TwoWire::write(const uint8_t *data, size_t quantity) {
 	}
 	return quantity;
 }
+
+size_t TwoWire::write(const uint8_t *data, int quantity) {
+	write(data, (uint16_t)quantity);
+}
+
 
 int TwoWire::available(void) {
 	return rxBufferLength - rxBufferIndex;

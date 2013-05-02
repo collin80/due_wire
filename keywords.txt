@@ -23,8 +23,8 @@ onRequest	KEYWORD2
 # Instances (KEYWORD2)
 #######################################
 
-Wire	KEYWORD2
-Wire1	KEYWORD2
+Wire	KEYWORD3
+Wire1	KEYWORD3
 
 #######################################
 # Constants (LITERAL1)

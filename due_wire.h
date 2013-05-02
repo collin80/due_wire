@@ -27,24 +27,32 @@
 #include "Stream.h"
 #include "variant.h"
 
-#define BUFFER_LENGTH 32
+//this buffer is much larger than the normal Arduino one
+//It allows for a 256 byte buffer to be sent along with 
+//extra control data.
+#define BUFFER_LENGTH 260
 
 class TwoWire : public Stream {
 public:
 	TwoWire(Twi *twi, void(*begin_cb)(void));
 	void begin();
 	void begin(uint8_t);
-	void begin(int);
+	void begin(uint16_t);
+	void begin(uint32_t);
+	void begin(uint8_t, uint32_t);
+	void begin(uint16_t, uint32_t);
+	void begin(uint32_t, uint32_t);
 	void beginTransmission(uint8_t);
 	void beginTransmission(int);
 	uint8_t endTransmission(void);
     uint8_t endTransmission(uint8_t);
-	uint8_t requestFrom(uint8_t, uint8_t);
-    uint8_t requestFrom(uint8_t, uint8_t, uint8_t);
-	uint8_t requestFrom(int, int);
-    uint8_t requestFrom(int, int, int);
+	uint8_t requestFrom(uint8_t, uint16_t);
+    uint8_t requestFrom(uint8_t, uint16_t, uint8_t);
+	//uint8_t requestFrom(int, int);
+    //uint8_t requestFrom(int, int, int);
 	virtual size_t write(uint8_t);
-	virtual size_t write(const uint8_t *, size_t);
+	virtual size_t write(const uint8_t *, uint16_t);
+	virtual size_t write(const uint8_t *, int);
 	virtual int available(void);
 	virtual int read(void);
 	virtual int peek(void);
@@ -61,20 +69,24 @@ public:
 	void onService(void);
 
 private:
+
+	//TWI clock freq
+	uint32_t twiSpeed;
+	
 	// RX Buffer
 	uint8_t rxBuffer[BUFFER_LENGTH];
-	uint8_t rxBufferIndex;
-	uint8_t rxBufferLength;
+	uint16_t rxBufferIndex;
+	uint16_t rxBufferLength;
 
 	// TX Buffer
 	uint8_t txAddress;
-	uint8_t txBuffer[BUFFER_LENGTH];
-	uint8_t txBufferLength;
+	uint16_t txBuffer[BUFFER_LENGTH];
+	uint16_t txBufferLength;
 
 	// Service buffer
 	uint8_t srvBuffer[BUFFER_LENGTH];
-	uint8_t srvBufferIndex;
-	uint8_t srvBufferLength;
+	uint16_t srvBufferIndex;
+	uint16_t srvBufferLength;
 
 	// Callback user functions
 	void (*onRequestCallback)(void);
@@ -97,9 +109,6 @@ private:
 		SLAVE_SEND
 	};
 	TwoWireStatus status;
-
-	// TWI clock frequency
-	static const uint32_t TWI_CLOCK = 100000;
 
 	// Timeouts (
 	static const uint32_t RECV_TIMEOUT = 100000;
