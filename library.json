@@ -1,0 +1,12 @@
+{
+  "name": "due_wire",
+  "keywords": "i2c, wire, dma",
+  "description": "An alternative I2C library for Due with DMA support",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/collin80/due_wire.git"
+  },
+  "version": "1.0.0",
+  "frameworks": "arduino",
+  "platforms": "atmelsam"
+}
